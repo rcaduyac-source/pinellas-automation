@@ -1,0 +1,17 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Real data never goes in Git. Only blank templates and fake samples.
+*.csv
+*.xlsx
+*.pdf
+!templates/*.csv
+!samples/*.csv
+
+# Tooling
+node_modules/
+.DS_Store
+.serena/
+.vscode/
