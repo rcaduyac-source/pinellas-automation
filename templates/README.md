@@ -1,5 +1,5 @@
 # Templates
 
-Blank CSV templates people fill in, with a note on what each column means and which Quickbase field it goes to.
+- `job-setup-template.csv`: the blank job template, same columns as *Job Creation - Template.xlsx*. Row 1 holds the Quickbase field ids, row 2 the column names. Fill in from row 3, one job per row.
 
-**Waiting on the job template files.** Nothing here until they arrive.
+See [quickbase/pages/job-setup/README.md](../quickbase/pages/job-setup/README.md) for what each column means and where it goes in Quickbase.

@@ -10,6 +10,9 @@
 !templates/*.csv
 !samples/*.csv
 
+# Built pages hold the Quickbase app token
+dist/
+
 # Tooling
 node_modules/
 .DS_Store

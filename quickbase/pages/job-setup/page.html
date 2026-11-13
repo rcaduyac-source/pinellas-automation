@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<!--
+  BYRDSON — JOB SETUP (bulk upload)
+  A Quickbase code page. People upload the filled-in job template as a CSV,
+  every row is checked, and nothing is saved until they confirm.
+
+  Built file: dist/job-setup.html (npm run build). Do not hand-edit the built
+  file; edit page.html, app.js, rules.js or shim.js and rebuild.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Job Setup — Byrdson Services</title>
+<style>
+  :root{
+    --navy:#1F3864; --navy-d:#152845; --navy-l:#2c4d86;
+    --gold:#C9A84C; --gold-d:#a98d38;
+    --bg:#eef1f6; --card:#fff; --ink:#1b2436; --muted:#606a7b;
+    --line:#dfe4ec; --danger:#c0392b; --ok:#1e7e46; --warn:#b7791f;
+    --r:14px; --shadow:0 2px 14px rgba(20,41,69,.09);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+  /* header */
+  .top{background:linear-gradient(100deg,var(--navy) 0%,#20406f 55%,var(--navy-l) 100%);
+    color:#fff;padding:14px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    border-bottom:3px solid var(--gold)}
+  .top .mark{width:34px;height:34px;border-radius:9px;background:var(--gold);color:var(--navy-d);
+    font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px}
+  .top h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.2px}
+  .top p{margin:2px 0 0;font-size:11.5px;opacity:.8}
+  .top .spacer{flex:1}
+  .top .mode{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    border:1px solid rgba(255,255,255,.35);padding:6px 11px;border-radius:20px;white-space:nowrap}
+  .top .mode.test{background:rgba(201,168,76,.25);border-color:var(--gold)}
+  .wrap{max-width:1480px;margin:0 auto;padding:22px 16px 130px}
+  /* sheet */
+  .sheet{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+    box-shadow:var(--shadow);overflow:hidden}
+  .sheet-hd{display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line)}
+  .sheet-hd .bar{width:5px;align-self:stretch;border-radius:3px;background:var(--gold)}
+  .sheet-hd h2{margin:0;font-size:16.5px;font-weight:750}
+  .sheet-hd p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+  /* banner */
+  .banner{margin:16px 26px 0;padding:11px 14px;border-radius:10px;font-size:13px;line-height:1.55}
+  .banner.warn{background:#fdf3e3;border:1px solid #f0e0b8;color:#7a5a12}
+  .banner.bad{background:#fdecea;border:1px solid #f3c9c3;color:#8c2a1e}
+  .banner.ok{background:#e7f5ec;border:1px solid #c3e0c8;color:#155e34}
+  /* bulk upload (bu-) */
+  .bu{padding:22px 26px 26px}
+  .bu-steps{margin:0 0 18px;padding-left:22px;line-height:1.85;font-size:14px}
+  .bu-steps li{margin-bottom:5px}
+  .bu-req{color:var(--danger);font-weight:700}
+  .bu-btn{background:var(--navy);color:#fff;border:0;border-radius:8px;padding:7px 13px;
+    font-size:13px;font-weight:650;cursor:pointer;font-family:inherit;margin-left:8px}
+  .bu-btn:hover{filter:brightness(1.15)}
+  .bu-drop{display:block;border:2px dashed #cfd6e2;border-radius:12px;padding:26px;text-align:center;
+    color:var(--muted);cursor:pointer;font-size:14px;background:#fafbfd}
+  .bu-drop:hover,.bu-drop.over{border-color:var(--navy);color:var(--navy);background:#f4f7fc}
+  .bu-drop.has{border-style:solid;border-color:var(--ok);background:#f1faf5;color:#14532d;font-weight:600}
+  .bu-btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--line)}
+  /* job grid */
+  .grid-scroll{overflow:auto;border:1px solid var(--line);border-radius:10px;max-height:62vh}
+  table.jg{border-collapse:collapse;width:100%;font-size:12.5px}
+  .jg th{position:sticky;top:0;z-index:2;background:#f6f8fb;text-align:left;padding:8px 7px;font-size:10.5px;
+    text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:1px solid var(--line);white-space:nowrap}
+  .jg td{padding:3px 3px;border-bottom:1px solid #f0f2f6;vertical-align:middle}
+  .jg td.rn{width:34px;text-align:center;color:#98a1b0;font-variant-numeric:tabular-nums}
+  .jg input,.jg select{width:100%;border:1px solid transparent;border-radius:6px;padding:6px 7px;font:inherit;
+    font-size:12.5px;color:var(--ink);background:transparent}
+  .jg tr:hover input,.jg tr:hover select{border-color:#e6eaf1}
+  .jg input:focus,.jg select:focus{outline:0;border-color:var(--navy-l);background:#fff;box-shadow:0 0 0 2px rgba(201,168,76,.22)}
+  .jg td.bad input,.jg td.bad select{border-color:#e7a29a;background:#fff6f5}
+  .jg input:disabled,.jg select:disabled{color:var(--ink);opacity:1;border-color:transparent;background:transparent}
+  .jg td.st{min-width:120px;padding:3px 8px;font-size:12px;white-space:nowrap}
+  .jg .del{border:0;background:none;color:#aab3c2;cursor:pointer;font-size:14px;padding:4px 7px;border-radius:6px}
+  .jg .del:hover{color:var(--danger);background:#fdecea}
+  .jg tr.errs td{padding:0 8px 8px;border-bottom:1px solid #f0f2f6}
+  .jg tr.errs .bu-err,.jg tr.errs .bu-wn{display:inline-block;margin-right:14px}
+  .st-ok{color:var(--ok);font-weight:650} .st-bad{color:var(--danger);font-weight:650}
+  .st-wait{color:var(--muted)} .st-own{color:var(--muted);font-weight:400}
+  .grid-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+  .grid-hint{font-size:12px;color:var(--muted)}
+  .grid-csv{margin-left:auto;font-size:12.5px;color:var(--muted);cursor:pointer}
+  .grid-csv u{color:var(--navy);font-weight:650}
+  .bu-ref{margin-top:14px;font-size:13px;color:var(--muted)}
+  .bu-ref summary{cursor:pointer;font-weight:600;color:var(--navy)}
+  .bu-ref h4{margin:12px 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+  .bu-chips{display:flex;flex-wrap:wrap;gap:5px}
+  .bu-chip{background:#eef1f6;border-radius:11px;padding:2px 9px;font-size:12px;white-space:nowrap}
+  .bu-sum{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .bu-tag{border-radius:11px;padding:3px 11px;font-size:12.5px;font-weight:700}
+  .bu-ok{background:#e7f5ec;color:var(--ok)} .bu-bad{background:#fdecea;color:var(--danger)}
+  .bu-warn{background:#fdf3e3;color:var(--warn)} .bu-info{background:#eef3fb;color:var(--navy)}
+  .bu-scroll{max-height:460px;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:12px}
+  .bu-tbl{border-collapse:collapse;width:100%;font-size:12.5px}
+  .bu-tbl th{position:sticky;top:0;background:#f6f8fb;text-align:left;padding:7px 9px;font-size:11px;
+    text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:1px solid var(--line);white-space:nowrap}
+  .bu-tbl td{padding:6px 9px;border-bottom:1px solid #f0f2f6;vertical-align:top}
+  .bu-tbl tr.bad{background:#fff6f5}
+  .bu-tbl .rn{color:#98a1b0;font-variant-numeric:tabular-nums}
+  .bu-tbl .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .bu-tbl a{color:var(--navy);font-weight:650}
+  .bu-err{color:var(--danger);font-size:12px}
+  .bu-wn{color:var(--warn);font-size:12px}
+  .bu-okt{color:var(--ok);font-size:12px;font-weight:650}
+  .bu-note{font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.6}
+  /* action bar */
+  .actbar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.97);border-top:1px solid var(--line);
+    padding:12px 20px;display:flex;gap:9px;justify-content:flex-end;align-items:center;flex-wrap:wrap;
+    box-shadow:0 -3px 16px rgba(20,41,69,.07);backdrop-filter:blur(6px)}
+  .actbar .note{margin-right:auto;font-size:12px;color:var(--muted)}
+  button.btn{font-family:inherit;font-size:13px;font-weight:650;padding:10px 17px;border-radius:10px;
+    border:1px solid transparent;cursor:pointer;transition:.12s}
+  button.btn:disabled{opacity:.55;cursor:not-allowed}
+  .b-out{background:#fff;border-color:var(--line);color:var(--navy)}
+  .b-out:hover:not(:disabled){background:#f2f5fa}
+  .b-gold{background:var(--gold);color:var(--navy-d)}
+  .b-gold:hover:not(:disabled){background:var(--gold-d);color:#fff}
+  /* toasts */
+  #toasts{position:fixed;right:16px;bottom:78px;z-index:100;display:flex;flex-direction:column;gap:9px}
+  .toast{background:#fff;border:1px solid var(--line);border-left:4px solid var(--ok);border-radius:11px;
+    padding:11px 15px;box-shadow:0 8px 26px rgba(20,41,69,.19);max-width:340px;animation:sl .22s ease}
+  .toast.bad{border-left-color:var(--danger)}
+  .toast .t{font-size:13px;font-weight:700}
+  .toast .d{font-size:12px;color:var(--muted);margin-top:2px}
+  @keyframes sl{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+  .hide{display:none !important}
+  @media(max-width:640px){ .wrap{padding:16px 12px 140px} .bu{padding:18px 16px} .banner{margin:14px 16px 0} }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="mark">B</div>
+  <div>
+    <h1>Job Setup</h1>
+    <p>Byrdson Services · add new jobs</p>
+  </div>
+  <div class="spacer"></div>
+  <span class="mode" id="modeTag"></span>
+</div>
+
+<div class="wrap">
+  <div class="sheet">
+    <div class="sheet-hd">
+      <div class="bar"></div>
+      <div>
+        <h2>New jobs</h2>
+        <p>Type one job per row, or paste rows from a spreadsheet. Each row is checked as you go.</p>
+      </div>
+    </div>
+
+    <div id="banner" class="banner hide"></div>
+
+    <div class="bu">
+      <div class="grid-scroll">
+        <table class="jg">
+          <thead id="gridHead"></thead>
+          <tbody id="gridBody"></tbody>
+        </table>
+      </div>
+
+      <div class="grid-tools" id="gridTools">
+        <button class="bu-btn" id="addRow" type="button" style="margin-left:0">+ Add row</button>
+        <button class="bu-btn ghost" id="add5" type="button">+ 5 rows</button>
+        <span class="grid-hint">Tip: press Enter to go to the next row. Columns with <span class="bu-req">*</span> are required.</span>
+        <label class="grid-csv">
+          <input type="file" id="file" accept=".csv,text/csv" hidden />
+          Have a filled-in template? <u>Load a CSV</u>
+        </label>
+      </div>
+
+      <details class="bu-ref">
+        <summary>Accepted values</summary>
+        <div id="ref"></div>
+      </details>
+
+      <div id="result"></div>
+    </div>
+  </div>
+</div>
+
+<div class="actbar" id="actbar">
+  <span class="note" id="actNote"></span>
+  <button class="btn b-out" id="againBtn" type="button">Clear all</button>
+  <button class="btn b-gold" id="createBtn" type="button" disabled>Create jobs</button>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+/*@@SHIM@@*/
+</script>
+<script>
+/*@@RULES@@*/
+</script>
+<script>
+/*@@APP@@*/
+</script>
+</body>
+</html>

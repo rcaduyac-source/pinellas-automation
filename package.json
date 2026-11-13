@@ -1,0 +1,10 @@
+{
+  "name": "pinellas-automation",
+  "private": true,
+  "description": "Automation for Byrdson's Pinellas Recovers jobs",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "build": "node scripts/build-page.js",
+    "build:preview": "node scripts/build-page.js --preview"
+  }
+}
