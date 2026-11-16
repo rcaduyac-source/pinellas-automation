@@ -33,4 +33,5 @@ The page runs as the signed-in Quickbase user, so no password or access key is s
 
 ## Status
 
-Repo set up. Waiting on the job template files before building the upload page.
+- **Job Setup** page built (test mode).
+- **Permits** page built (test mode): permit checklist, permit documents and US Permits for a job. Ported from the Florida Assignments app's Permits tab.

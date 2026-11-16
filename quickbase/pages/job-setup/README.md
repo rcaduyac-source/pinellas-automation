@@ -38,7 +38,7 @@ The homeowner also gets the job address (Owners 10, 12, 13, 14).
 ```
 npm test                 # checking rules
 npm run build:preview    # dist/job-setup.preview.html, no token, for a local look
-npm run build            # dist/job-setup.html, needs QB_APP_TOKEN in env or .env
+npm run build            # dist/job-setup.html and every other page, needs QB_APP_TOKEN in env or .env
 ```
 
 Deploy `dist/job-setup.html` as a code page with `API_AddReplaceDBPage`. The app token only exists in `dist/` and `.env`, which Git ignores.
@@ -48,4 +48,4 @@ Deploy `dist/job-setup.html` as a code page with `API_AddReplaceDBPage`. The app
 - `page.html`: layout and styles (from the Purchase Entry bulk upload design)
 - `rules.js`: reading and checking, no network (tested in `test/rules.test.js`)
 - `app.js`: page behaviour and Quickbase calls
-- `shim.js`: QB-SESSION-SHIM v2, copied from `invoice_doc_upload.html`, token replaced by a placeholder
+- `../shared/shim.js`: QB-SESSION-SHIM v2, copied from `invoice_doc_upload.html`, token replaced by a placeholder (shared by every page)
