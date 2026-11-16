@@ -1,7 +1,9 @@
 /* QB-SESSION-SHIM v2 — reroutes REST api.quickbase.com calls through the same-origin
    XML API using the signed-in session + app token. Injected 2026-07-08 because Chrome
    blocks the QB session cookie on cross-site REST calls (root cause of token-paste UX).
-   Remove when Quickbase pages migrate natively. */
+   Remove when Quickbase pages migrate natively.
+   Local change: GET /fields?tableId= also returns each field's choice list
+   (properties.choices), which the Permits page uses for its dropdowns. */
 (function(){
   var APPTOKEN="__QB_APP_TOKEN__";
   var SEED_KEYS=["byrdson_qb_finance_token"];
@@ -144,7 +146,8 @@
         return xml(mf[1],"API_GetSchema","").then(function(doc){
           var out=[];
           doc.querySelectorAll("field").forEach(function(f){
-            out.push({id:Number(f.getAttribute("id")),label:(f.querySelector("label")||{}).textContent||"",fieldType:f.getAttribute("field_type")||"text"});
+            var ch=[]; f.querySelectorAll("choices > choice").forEach(function(c){ ch.push(c.textContent); });
+            out.push({id:Number(f.getAttribute("id")),label:(f.querySelector("label")||{}).textContent||"",fieldType:f.getAttribute("field_type")||"text",properties:{choices:ch}});
           });
           return jresp(out);
         });

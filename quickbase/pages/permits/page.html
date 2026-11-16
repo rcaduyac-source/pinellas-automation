@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<!--
+  BYRDSON — PERMITS (Pinellas Recovers)
+  A Quickbase code page. Pick a job and work its permits in one place:
+  the permit requirements checklist, the permit documents, and the job's
+  rows in US Permits (edit, add, mark as not applying).
+
+  Built file: dist/permits.html (npm run build). Do not hand-edit the built
+  file; edit page.html, app.js, rules.js or ../shared/shim.js and rebuild.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Permits — Byrdson Services</title>
+<style>
+  :root{
+    --navy:#1F3864; --navy-d:#152845; --navy-l:#2c4d86;
+    --gold:#C9A84C; --gold-d:#a98d38;
+    --bg:#eef1f6; --card:#fff; --ink:#1b2436; --muted:#606a7b;
+    --line:#dfe4ec; --danger:#c0392b; --ok:#1e7e46; --warn:#b7791f;
+    --r:14px; --shadow:0 2px 14px rgba(20,41,69,.09);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+  a{color:var(--navy);font-weight:650}
+  /* header */
+  .top{background:linear-gradient(100deg,var(--navy) 0%,#20406f 55%,var(--navy-l) 100%);
+    color:#fff;padding:14px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    border-bottom:3px solid var(--gold)}
+  .top .mark{width:34px;height:34px;border-radius:9px;background:var(--gold);color:var(--navy-d);
+    font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px}
+  .top h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.2px}
+  .top p{margin:2px 0 0;font-size:11.5px;opacity:.8}
+  .top .spacer{flex:1}
+  .top .mode{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    border:1px solid rgba(255,255,255,.35);padding:6px 11px;border-radius:20px;white-space:nowrap}
+  .top .mode.test{background:rgba(201,168,76,.25);border-color:var(--gold)}
+  .wrap{max-width:1280px;margin:0 auto;padding:22px 16px 60px;display:flex;flex-direction:column;gap:18px}
+  /* cards */
+  .sheet{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+  .sheet-hd{display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .sheet-hd .bar{width:5px;align-self:stretch;border-radius:3px;background:var(--gold)}
+  .sheet-hd .tt{flex:1;min-width:220px}
+  .sheet-hd h2{margin:0;font-size:16px;font-weight:750}
+  .sheet-hd p{margin:2px 0 0;font-size:12px;color:var(--muted);line-height:1.5}
+  .body{padding:16px 20px}
+  .banner{margin:0;padding:11px 14px;border-radius:10px;font-size:13px;line-height:1.55}
+  .banner.warn{background:#fdf3e3;border:1px solid #f0e0b8;color:#7a5a12}
+  .banner.bad{background:#fdecea;border:1px solid #f3c9c3;color:#8c2a1e}
+  .banner.ok{background:#e7f5ec;border:1px solid #c3e0c8;color:#155e34}
+  /* job picker */
+  .pick{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .pick .f{flex:1;min-width:240px}
+  .job-meta{margin-top:12px;font-size:13px;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap}
+  .job-meta b{color:var(--ink)}
+  /* form controls */
+  label.lb{display:flex;flex-direction:column;gap:4px;font-size:11.5px;font-weight:650;color:var(--muted);min-width:0}
+  .in{width:100%;min-width:0;border:1px solid var(--line);border-radius:8px;padding:8px 9px;font:inherit;font-size:13px;color:var(--ink);background:#fff}
+  .in:focus{outline:0;border-color:var(--navy-l);box-shadow:0 0 0 2px rgba(201,168,76,.22)}
+  textarea.in{min-height:70px;resize:vertical}
+  .ck{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+  .form{display:grid;gap:12px;grid-template-columns:repeat(4,minmax(0,1fr));padding:14px 20px;background:#fafbfd;border-top:1px solid var(--line)}
+  .form .s2{grid-column:span 2} .form .s4{grid-column:1/-1}
+  .form .acts{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+  .form .errs{grid-column:1/-1;color:var(--danger);font-size:12.5px}
+  /* tables */
+  .scroll{overflow-x:auto}
+  table.t{border-collapse:collapse;width:100%;font-size:13px}
+  .t th{background:#f6f8fb;text-align:left;padding:8px 10px;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;
+    color:var(--muted);border-bottom:1px solid var(--line);white-space:nowrap}
+  .t td{padding:9px 10px;border-bottom:1px solid #f0f2f6;vertical-align:top}
+  .t tr.void td{opacity:.6}
+  .t td.sm{font-size:12px} .t td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .t td.nw{white-space:nowrap}
+  .t .nm{font-weight:650}
+  .t .sub{font-size:12px;color:var(--muted);margin-top:2px;white-space:pre-line}
+  .t .when{font-size:12px;color:var(--warn);margin-top:2px}
+  .t details{font-size:12px;color:var(--muted);margin-top:4px}
+  .t details summary{cursor:pointer}
+  .t details div{margin-top:4px;line-height:1.5}
+  .files{margin-top:5px;display:flex;flex-direction:column;gap:2px;font-size:12px}
+  .empty{padding:22px;text-align:center;color:var(--muted);font-size:13px}
+  .foot{padding:8px 20px 12px;font-size:12px;color:var(--muted)}
+  /* pills */
+  .pill{display:inline-block;border-radius:11px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+  .p-ok{background:#e7f5ec;color:var(--ok)} .p-bad{background:#fdecea;color:var(--danger)}
+  .p-warn{background:#fdf3e3;color:var(--warn)} .p-info{background:#eef3fb;color:var(--navy)}
+  .p-grey{background:#eef1f6;color:var(--muted)}
+  .new-tag{font-size:11px;color:var(--danger);margin-top:3px}
+  /* buttons */
+  button.btn{font-family:inherit;font-size:12.5px;font-weight:650;padding:8px 13px;border-radius:9px;
+    border:1px solid transparent;cursor:pointer;transition:.12s;white-space:nowrap}
+  button.btn.sm{padding:5px 10px;font-size:12px}
+  button.btn:disabled{opacity:.55;cursor:not-allowed}
+  .b-navy{background:var(--navy);color:#fff} .b-navy:hover:not(:disabled){filter:brightness(1.15)}
+  .b-out{background:#fff;border-color:var(--line);color:var(--navy)} .b-out:hover:not(:disabled){background:#f2f5fa}
+  .b-gold{background:var(--gold);color:var(--navy-d)} .b-gold:hover:not(:disabled){background:var(--gold-d);color:#fff}
+  .b-red{background:var(--danger);color:#fff} .b-red:hover:not(:disabled){filter:brightness(1.1)}
+  .row-acts{display:flex;gap:6px;flex-wrap:wrap}
+  /* toasts */
+  #toasts{position:fixed;right:16px;bottom:20px;z-index:100;display:flex;flex-direction:column;gap:9px}
+  .toast{background:#fff;border:1px solid var(--line);border-left:4px solid var(--ok);border-radius:11px;
+    padding:11px 15px;box-shadow:0 8px 26px rgba(20,41,69,.19);max-width:360px;animation:sl .22s ease}
+  .toast.bad{border-left-color:var(--danger)}
+  .toast .t1{font-size:13px;font-weight:700}
+  .toast .d{font-size:12px;color:var(--muted);margin-top:2px;white-space:pre-line}
+  @keyframes sl{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+  .hide{display:none !important}
+  @media(max-width:760px){
+    .wrap{padding:16px 12px 50px} .body{padding:14px 16px}
+    .form{grid-template-columns:repeat(2,minmax(0,1fr));padding:14px 16px}
+  }
+  @media(max-width:460px){ .form{grid-template-columns:minmax(0,1fr)} .form .s2{grid-column:auto} }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="mark">B</div>
+  <div>
+    <h1>Permits</h1>
+    <p>Byrdson Services · Pinellas Recovers</p>
+  </div>
+  <div class="spacer"></div>
+  <span class="mode" id="modeTag"></span>
+</div>
+
+<div class="wrap">
+  <div id="banner" class="banner hide"></div>
+
+  <div class="sheet">
+    <div class="sheet-hd">
+      <div class="bar"></div>
+      <div class="tt">
+        <h2>Job</h2>
+        <p>Pick a Pinellas job. The link in your address bar opens this job next time.</p>
+      </div>
+    </div>
+    <div class="body">
+      <div class="pick">
+        <label class="lb f" for="jobSearch">Find a job
+          <input class="in" id="jobSearch" type="search" placeholder="Case number, name or street" autocomplete="off" />
+        </label>
+        <label class="lb f" for="jobSelect">Job
+          <select class="in" id="jobSelect"><option value="">Loading jobs…</option></select>
+        </label>
+        <label class="ck" for="showClosed"><input type="checkbox" id="showClosed" />Show closed jobs</label>
+      </div>
+      <div id="jobMeta" class="job-meta hide"></div>
+    </div>
+  </div>
+
+  <div id="jobArea" class="hide" style="display:flex;flex-direction:column;gap:18px">
+    <!-- 1. checklist -->
+    <div class="sheet">
+      <div class="sheet-hd">
+        <div class="bar"></div>
+        <div class="tt">
+          <h2 id="reqTitle">Permit requirements</h2>
+          <p>From the Pinellas Recovers Permit Requirements Check. Upload each one and mark it Received, or mark it Not needed when its condition does not apply to this job.</p>
+        </div>
+        <span id="reqCount"></span>
+      </div>
+      <div class="scroll"><table class="t">
+        <thead><tr><th>Requirement</th><th>Who provides</th><th>Check</th><th>This job</th><th>File</th></tr></thead>
+        <tbody id="reqBody"></tbody>
+      </table></div>
+      <div id="reqEmpty" class="empty hide"></div>
+    </div>
+
+    <!-- 2. documents -->
+    <div class="sheet">
+      <div class="sheet-hd">
+        <div class="bar"></div>
+        <div class="tt">
+          <h2>Permit documents</h2>
+          <p>Files on this job in Attachments with category "Permits". New files are saved to Quickbase; the Florida Assignments app copies them to the job's Google Drive folder.</p>
+        </div>
+      </div>
+      <div class="scroll"><table class="t">
+        <thead><tr><th>File</th><th>Description</th><th>Added</th></tr></thead>
+        <tbody id="docBody"></tbody>
+      </table></div>
+      <div id="docEmpty" class="empty hide">No permit documents on this job yet.</div>
+      <div class="form" id="upForm">
+        <label class="lb s2" for="upFile">File (up to 15 MB)<input class="in" id="upFile" type="file" /></label>
+        <label class="lb" for="upType">Document type<select class="in" id="upType"></select></label>
+        <label class="lb" for="upPermit">For permit (optional)<select class="in" id="upPermit"></select></label>
+        <label class="lb s4" for="upNote">Note (optional)<input class="in" id="upNote" placeholder="e.g. signed by the homeowner on site" /></label>
+        <div class="acts"><button class="btn b-navy" id="upBtn" type="button">Upload</button></div>
+      </div>
+    </div>
+
+    <!-- 3. US Permits -->
+    <div class="sheet">
+      <div class="sheet-hd">
+        <div class="bar"></div>
+        <div class="tt">
+          <h2>Permits on this job</h2>
+          <p>The job's rows in the US Permits table. Each Pinellas job started with the same 15 generic rows (Jul 28, 2026): mark the ones that do not apply as Voided and add any that are missing. Voided rows are kept, never deleted.</p>
+        </div>
+        <label class="ck hide" id="showVoidWrap" for="showVoid"><input type="checkbox" id="showVoid" /><span id="showVoidTxt"></span></label>
+        <button class="btn b-out" id="addPermit" type="button">+ Add permit</button>
+      </div>
+      <div id="newPermit"></div>
+      <div class="scroll"><table class="t">
+        <thead><tr><th>Permit</th><th>Status</th><th>Number</th><th>Submitted</th><th>Issued</th><th>Expires</th><th>Fee</th><th></th></tr></thead>
+        <tbody id="permitBody"></tbody>
+      </table></div>
+      <div id="permitEmpty" class="empty hide"></div>
+      <div id="permitFoot" class="foot hide"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+/*@@SHIM@@*/
+</script>
+<script>
+/*@@RULES@@*/
+</script>
+<script>
+/*@@APP@@*/
+</script>
+</body>
+</html>
